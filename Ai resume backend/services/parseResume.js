@@ -1,0 +1,26 @@
+import { PDFParse } from "pdf-parse";
+import mammoth from "mammoth";
+
+export async function extractTextFromFile(file) {
+  const { mimetype, buffer } = file;
+
+  if (mimetype === "application/pdf") {
+    const parser = new PDFParse({ data: buffer });
+    const result = await parser.getText();
+    return result.text;
+  }
+
+  if (
+    mimetype ===
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+  ) {
+    const result = await mammoth.extractRawText({ buffer });
+    return result.value;
+  }
+
+  if (mimetype === "text/plain") {
+    return buffer.toString("utf-8");
+  }
+
+  throw new Error("Unsupported file type");
+}
