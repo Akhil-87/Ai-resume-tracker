@@ -24,7 +24,10 @@ app.use("/api/applications", applicationRoutes);
 // Central error handler (catches multer errors, etc.)
 app.use((err, req, res, next) => {
   console.error(err);
-  res.status(err.status || 500).json({ error: err.message || "Server error" });
+  const status = err.status || (err.name === "MulterError" ? 400 : 500);
+  res.status(status).json({
+    error: status === 500 ? "Server error" : err.message || "Invalid request"
+  });
 });
 
 const PORT = process.env.PORT || 5000;

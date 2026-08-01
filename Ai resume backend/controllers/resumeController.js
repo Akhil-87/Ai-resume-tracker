@@ -2,6 +2,19 @@ import Resume from "../models/Resume.js";
 import { extractTextFromFile } from "../services/parseResume.js";
 import { scoreResumeAgainstJob } from "../services/aiService.js";
 
+function sendError(res, err) {
+  if (err.name === "CastError") {
+    return res.status(400).json({ error: "Invalid resume id" });
+  }
+
+  if (err.name === "ValidationError" || err.message === "Unsupported file type") {
+    return res.status(400).json({ error: err.message });
+  }
+
+  console.error(err);
+  return res.status(500).json({ error: "Unable to process the resume" });
+}
+
 export async function uploadResume(req, res) {
   try {
     if (!req.file) return res.status(400).json({ error: "No file uploaded" });
@@ -18,7 +31,7 @@ export async function uploadResume(req, res) {
 
     res.status(201).json(resume);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    return sendError(res, err);
   }
 }
 
@@ -27,7 +40,7 @@ export async function listResumes(req, res) {
     const resumes = await Resume.find().sort({ createdAt: -1 }).select("-rawText");
     res.json(resumes);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    return sendError(res, err);
   }
 }
 
@@ -37,7 +50,7 @@ export async function getResume(req, res) {
     if (!resume) return res.status(404).json({ error: "Resume not found" });
     res.json(resume);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    return sendError(res, err);
   }
 }
 
@@ -58,15 +71,16 @@ export async function scoreResume(req, res) {
 
     res.json(resume);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    return sendError(res, err);
   }
 }
 
 export async function deleteResume(req, res) {
   try {
-    await Resume.findByIdAndDelete(req.params.id);
-    res.json({ success: true });
+    const resume = await Resume.findByIdAndDelete(req.params.id);
+    if (!resume) return res.status(404).json({ error: "Resume not found" });
+    return res.json({ success: true });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    return sendError(res, err);
   }
 }

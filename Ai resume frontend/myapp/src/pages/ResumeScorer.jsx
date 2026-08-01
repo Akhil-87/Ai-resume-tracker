@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { api } from "../api";
+import { api } from "../Api";
 import ResumeUpload from "../components/ResumeUpload";
 import ScoreResult from "../components/ScoreResult";
 
@@ -12,18 +12,18 @@ export default function ResumeScorer() {
   const [result, setResult] = useState(null);
 
   useEffect(() => {
-    loadResumes();
-  }, []);
-
-  async function loadResumes() {
-    try {
-      const data = await api.listResumes();
-      setResumes(data);
-      if (data.length && !selectedId) setSelectedId(data[0]._id);
-    } catch (err) {
-      setError(err.message);
+    async function loadResumes() {
+      try {
+        const data = await api.listResumes();
+        setResumes(data);
+        setSelectedId((currentId) => currentId || data[0]?._id || "");
+      } catch (err) {
+        setError(err.message);
+      }
     }
-  }
+
+    void loadResumes();
+  }, []);
 
   function handleUploaded(resume) {
     setResumes((prev) => [resume, ...prev]);

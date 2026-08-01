@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { api } from "../api";
+import { api } from "../Api";
 
 export default function ResumeUpload({ onUploaded }) {
   const inputRef = useRef();

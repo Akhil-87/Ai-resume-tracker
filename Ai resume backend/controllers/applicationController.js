@@ -1,11 +1,25 @@
 import Application from "../models/Application.js";
 
+function sendError(res, err) {
+  if (err.name === "CastError") {
+    return res.status(400).json({ error: "Invalid application id" });
+  }
+
+  if (err.name === "ValidationError") {
+    return res.status(400).json({ error: err.message });
+  }
+
+  console.error(err);
+  return res.status(500).json({ error: "Unable to process the application" });
+}
+
 export async function createApplication(req, res) {
   try {
-    const app = await Application.create(req.body);
-    res.status(201).json(app);
+    const { company, role, jobDescription, notes } = req.body;
+    const app = await Application.create({ company, role, jobDescription, notes });
+    return res.status(201).json(app);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    return sendError(res, err);
   }
 }
 
@@ -14,20 +28,26 @@ export async function listApplications(req, res) {
     const apps = await Application.find().populate("resume", "fileName").sort({ createdAt: -1 });
     res.json(apps);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    return sendError(res, err);
   }
 }
 
 export async function updateApplication(req, res) {
   try {
-    const app = await Application.findByIdAndUpdate(req.params.id, req.body, {
+    const allowedFields = ["company", "role", "jobDescription", "notes", "resume", "matchScore"];
+    const updates = Object.fromEntries(
+      allowedFields
+        .filter((field) => req.body[field] !== undefined)
+        .map((field) => [field, req.body[field]])
+    );
+    const app = await Application.findByIdAndUpdate(req.params.id, updates, {
       new: true,
       runValidators: true
     });
     if (!app) return res.status(404).json({ error: "Application not found" });
     res.json(app);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    return sendError(res, err);
   }
 }
 
@@ -50,15 +70,16 @@ export async function updateStatus(req, res) {
     if (!app) return res.status(404).json({ error: "Application not found" });
     res.json(app);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    return sendError(res, err);
   }
 }
 
 export async function deleteApplication(req, res) {
   try {
-    await Application.findByIdAndDelete(req.params.id);
-    res.json({ success: true });
+    const app = await Application.findByIdAndDelete(req.params.id);
+    if (!app) return res.status(404).json({ error: "Application not found" });
+    return res.json({ success: true });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    return sendError(res, err);
   }
 }

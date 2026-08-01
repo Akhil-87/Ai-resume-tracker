@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { api } from "../api";
+import { api } from "../Api";
 import ApplicationCard from "../components/ApplicationCard";
 import AddApplicationModal from "../components/AddApplicationModal";
 
